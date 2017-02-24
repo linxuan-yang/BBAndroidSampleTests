@@ -17,6 +17,78 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    testOptions.unitTests.all {
+        testLogging {
+            // some pretty good options to show raw debugging/logging information
+//            showStandardStreams true
+//            displayGranularity 0
+            // listen to standard out and standard error of the test JVM(s)
+            onOutput { descriptor, event ->
+                logger.lifecycle(event.message)
+            }
+
+            // listen to events in the test execution lifecycle
+            // could do this inside the src/java/... but rather not modify java code
+            beforeTest { descriptor ->
+                // scanning for some obvious errors; but maybe more relevant or insightful
+                // error checking?
+                if (descriptor == null) {
+                    // should never happen
+                    println("Buddybuild Starting Test: something has gone very wrong");
+                    return;
+                }
+                println("Buddybuild Starting Test: " + descriptor.getName());
+            }
+
+            afterTest { descriptor, result ->
+                // scanning for some obvious errors; but maybe more relevant or insightful
+                // error checking?
+                if (descriptor == null || result == null) {
+                    // should never happen
+                    println("Buddybuild Starting Test: something has gone very wrong");
+                    return;
+                }
+
+                long testStartTime = result.getStartTime();
+                long testEndTime = result.getEndTime();
+                long failedTest = result.getFailedTestCount();
+                // convert to seconds, long is 64-bit, double is 64-bit floating point
+                // perhaps need to round to 3 decimal places since display is 3 decimal places
+                // maybe use Decimal or BigDecimal to address any precision issues...
+                double execTime = (double)((testEndTime - testStartTime) / 1000.0);
+                String isSuccess = "SUCCESS";
+                if (failedTest > 0) {
+                    isSuccess = "FAILURE"
+                }
+                println("Buddybuild Finished Test: " + descriptor.getName() +
+                        " [" + String.format("%.3f", execTime) + "s]" + " - " + isSuccess);
+            }
+
+            // listen to events in the test suite execution lifecycle
+            beforeSuite { suite ->
+                // scanning for some obvious errors; but maybe more relevant or insightful
+                // error checking?
+                if (suite == null) {
+                    println("Buddybuild Starting Test Suite: something has gone very wrong")
+                    return;
+                }
+                println("Buddybuild Starting Test Suite: " + suite.getName() + "}")
+            }
+
+            // Note: not subscribing to the TestResult here since it is apparently not needed
+            //       to generate the desired logs but just note here.
+            afterSuite { suite ->
+                // scanning for some obvious errors; but maybe more relevant or insightful
+                // error checking?
+                if (suite == null) {
+                    println("Buddybuild Starting Test Suite: something has gone very wrong")
+                    return;
+                }
+                println("Buddybuild Finished Test Suite: " + suite.getName() + "}")
+            }
+        }
+    }
 }
 
 dependencies {
